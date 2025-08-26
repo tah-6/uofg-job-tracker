@@ -131,6 +131,7 @@ function formatDate(d?: string) {
   }
 }
 
+
 function isDueSoon(date?: string) {
   if (!date) return false;
   const ms = new Date(date).getTime() - Date.now();
@@ -230,6 +231,15 @@ export default function UofGJobTracker() {
             >
               Add Job
             </button>
+            <button onClick={() => exportCSV(rows)} className="rounded border px-3 py-2 text-sm">Export CSV</button>
+<label className="rounded border px-3 py-2 text-sm cursor-pointer">
+  Import CSV
+  <input type="file" accept=".csv" className="hidden" onChange={e => {
+    const f = e.target.files?.[0]; if (f) importCSV(f);
+    e.currentTarget.value = "";
+  }}/>
+  </label>
+
           </div>
         </header>
 
@@ -329,5 +339,43 @@ export default function UofGJobTracker() {
       {/* Modal */}
       <AddJobModal open={modalOpen} onClose={() => setModalOpen(false)} onCreate={addRow} />
     </div>
+    
   );
+
+  function updateRow(patch: JobRow) {
+    setRows(prev => prev.map(r => (r.id === patch.id ? { ...r, ...patch } : r)));
+  }
+
+  function exportCSV(rows: JobRow[]) {
+    const headers = ["company","position","dateApplied","deadline","status","details","portal"];
+    const lines = [headers.join(",")].concat(
+      rows.map(r => headers.map(h => JSON.stringify((r as any)[h] ?? "")).join(","))
+    );
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "applications.csv"; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importCSV(file: File) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result || "");
+      const [headerLine, ...rowsText] = text.split(/\r?\n/).filter(Boolean);
+      const headers = headerLine.split(",").map(h => h.replace(/(^\"|\"$)/g,""));
+      const toRow = (line: string): JobRow | null => {
+        const cells = line.match(/(\".*?\"|[^,]+)/g) ?? [];
+        const obj: any = {};
+        headers.forEach((h, i) => obj[h] = JSON.parse(cells[i] ?? "\"\""));
+        if (!obj.company || !obj.position) return null;
+        return { id: crypto.randomUUID(), ...obj };
+      };
+      const imported = rowsText.map(toRow).filter(Boolean) as JobRow[];
+      setRows(prev => [...prev, ...imported]);
+    };
+    reader.readAsText(file);
+  }
+  
+
 }
