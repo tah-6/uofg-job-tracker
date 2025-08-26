@@ -131,7 +131,7 @@ function formatDate(d?: string) {
 }
 
 export default function UofGJobTracker() {
-  const [rows, setRows] = useState<JobRow[]>(mockData);
+  const [rows] = useState<JobRow[]>(mockData);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<JobStatus | "all">("all");
 
@@ -156,7 +156,7 @@ export default function UofGJobTracker() {
       return matchesStatus && matchesQuery;
     }).sort((a, b) => (a.deadline || "").localeCompare(b.deadline || ""));
   }, [rows, statusFilter, query]);
-
+  
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -164,23 +164,31 @@ export default function UofGJobTracker() {
         <header className="flex items-end justify-between">
           <div>
             <h1 className="text-2xl font-bold">Internship & Job Tracker</h1>
-            <p className="text-sm text-gray-600">Mirror of your spreadsheet: header counts + table, but interactive.</p>
+            <p className="text-sm text-gray-600">
+              Mirror of your spreadsheet: header counts + table, but interactive.
+            </p>
           </div>
           <div className="flex gap-2">
             <input
               value={query}
-              onChange={e => setQuery(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setQuery(e.target.value)
+              }
               placeholder="Search company, position, notes"
               className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
             <select
               value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value as any)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                setStatusFilter(e.target.value as JobStatus | "all")
+              }
               className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
               <option value="all">All Statuses</option>
-              {Object.keys(STATUS_LABEL).map(k => (
-                <option key={k} value={k}>{STATUS_LABEL[k as JobStatus]}</option>
+              {Object.keys(STATUS_LABEL).map((k) => (
+                <option key={k} value={k}>
+                  {STATUS_LABEL[k as JobStatus]}
+                </option>
               ))}
             </select>
           </div>
