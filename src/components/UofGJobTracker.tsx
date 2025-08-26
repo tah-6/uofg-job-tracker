@@ -1,15 +1,10 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import AddJobModal from "@/components/AddJobModal";
+import { useLocalRows } from "@/hooks/useLocalRows";
 
-/**main
- * UofG Job Tracker – Spreadsheet-style UI
- * - Mirrors your sheet: header counts + simple table with filters
- * - Pure React + Tailwind (drop into Next.js / CRA and it runs)
- * - Replace mockData with your DB results when ready
- */
-
-// ----- Types -----
+/** Types */
 export type JobStatus =
   | "submitted"
   | "in_progress"
@@ -22,15 +17,15 @@ export interface JobRow {
   id: string;
   company: string;
   position: string;
-  dateApplied?: string; // ISO or YYYY-MM-DD
-  deadline?: string; // YYYY-MM-DD for sorting/highlighting
+  dateApplied?: string; // YYYY-MM-DD
+  deadline?: string; // YYYY-MM-DD
   status: JobStatus;
-  details?: string; // notes
-  portal?: string; // URL
-  resumeVersion?: string; // e.g., resume_v3.pdf
+  details?: string;
+  portal?: string;
+  resumeVersion?: string;
 }
 
-// ----- Mock Data (swap out later) -----
+/** Seed data for first run; afterwards localStorage takes over */
 const mockData: JobRow[] = [
   {
     id: "1",
@@ -94,6 +89,7 @@ const mockData: JobRow[] = [
   },
 ];
 
+/** Labels & colors */
 const STATUS_LABEL: Record<JobStatus, string> = {
   saved: "Saved",
   submitted: "Submitted",
@@ -112,6 +108,7 @@ const STATUS_COLOR: Record<JobStatus, string> = {
   rejected: "bg-red-100 text-red-800",
 };
 
+/** Small helpers */
 function StatusChip({ status }: { status: JobStatus }) {
   return (
     <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLOR[status]}`}>
@@ -123,18 +120,34 @@ function StatusChip({ status }: { status: JobStatus }) {
 function formatDate(d?: string) {
   if (!d) return "—";
   try {
-    const intl = new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short", day: "2-digit" });
+    const intl = new Intl.DateTimeFormat(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    });
     return intl.format(new Date(d));
   } catch {
     return d;
   }
 }
 
+function isDueSoon(date?: string) {
+  if (!date) return false;
+  const ms = new Date(date).getTime() - Date.now();
+  return ms >= 0 && ms <= 3 * 24 * 60 * 60 * 1000; // within 3 days
+}
+
+/** Component */
 export default function UofGJobTracker() {
-  const [rows] = useState<JobRow[]>(mockData);
+  // Persist rows locally; seed from mockData first time
+  const [rows, setRows] = useLocalRows<JobRow[]>("uofg-jobs", mockData);
+
+  // UI state
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<JobStatus | "all">("all");
+  const [modalOpen, setModalOpen] = useState(false);
 
+  // Derived counts
   const counts = useMemo(() => {
     const base: Record<JobStatus, number> = {
       saved: 0,
@@ -144,19 +157,43 @@ export default function UofGJobTracker() {
       offer: 0,
       rejected: 0,
     };
-    rows.forEach(r => { base[r.status]++; });
+    rows.forEach((r) => {
+      base[r.status]++;
+    });
     return base;
   }, [rows]);
 
+  // Filtering + sorting by deadline
   const filtered = useMemo(() => {
-    return rows.filter(r => {
-      const matchesStatus = statusFilter === "all" ? true : r.status === statusFilter;
-      const hay = `${r.company} ${r.position} ${r.details ?? ""}`.toLowerCase();
-      const matchesQuery = hay.includes(query.toLowerCase());
-      return matchesStatus && matchesQuery;
-    }).sort((a, b) => (a.deadline || "").localeCompare(b.deadline || ""));
+    return rows
+      .filter((r) => {
+        const matchesStatus = statusFilter === "all" ? true : r.status === statusFilter;
+        const hay = `${r.company} ${r.position} ${r.details ?? ""}`.toLowerCase();
+        const matchesQuery = hay.includes(query.toLowerCase());
+        return matchesStatus && matchesQuery;
+      })
+      .sort((a, b) => (a.deadline || "").localeCompare(b.deadline || ""));
   }, [rows, statusFilter, query]);
-  
+
+  /** Handlers */
+  const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+  };
+
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value as JobStatus | "all";
+    setStatusFilter(val);
+  };
+
+  function addRow(newRow: JobRow) {
+    setRows((prev) => [...prev, newRow]);
+  }
+
+  function deleteRow(id: string) {
+    setRows((prev) => prev.filter((r) => r.id !== id));
+  }
+
+  /** Render */
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -171,17 +208,13 @@ export default function UofGJobTracker() {
           <div className="flex gap-2">
             <input
               value={query}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setQuery(e.target.value)
-              }
+              onChange={handleQueryChange}
               placeholder="Search company, position, notes"
               className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
             <select
               value={statusFilter}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setStatusFilter(e.target.value as JobStatus | "all")
-              }
+              onChange={handleStatusChange}
               className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
               <option value="all">All Statuses</option>
@@ -191,20 +224,23 @@ export default function UofGJobTracker() {
                 </option>
               ))}
             </select>
+            <button
+              onClick={() => setModalOpen(true)}
+              className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Add Job
+            </button>
           </div>
         </header>
 
         {/* Key / Counts */}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {Object.keys(STATUS_LABEL).map((k) => {
-            const st = k as JobStatus;
-            return (
-              <div key={k} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-                <div className="text-xs text-gray-500">{STATUS_LABEL[st]}</div>
-                <div className="mt-1 text-2xl font-semibold">{counts[st]}</div>
-              </div>
-            );
-          })}
+          {(Object.keys(STATUS_LABEL) as JobStatus[]).map((st) => (
+            <div key={st} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="text-xs text-gray-500">{STATUS_LABEL[st]}</div>
+              <div className="mt-1 text-2xl font-semibold">{counts[st]}</div>
+            </div>
+          ))}
         </section>
 
         {/* Table */}
@@ -220,8 +256,12 @@ export default function UofGJobTracker() {
                   "Application Status",
                   "Details",
                   "Applicant Portal",
+                  "", // actions
                 ].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
+                  <th
+                    key={h}
+                    className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600"
+                  >
                     {h}
                   </th>
                 ))}
@@ -233,22 +273,44 @@ export default function UofGJobTracker() {
                   <td className="px-4 py-3 text-sm font-medium text-gray-900">{row.company}</td>
                   <td className="px-4 py-3 text-sm text-gray-800">{row.position}</td>
                   <td className="px-4 py-3 text-sm text-gray-700">{formatDate(row.dateApplied)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{formatDate(row.deadline)}</td>
-                  <td className="px-4 py-3 text-sm"><StatusChip status={row.status} /></td>
+                  <td className="px-4 py-3 text-sm text-gray-700">
+                    <div className="flex items-center gap-2">
+                      {formatDate(row.deadline)}
+                      {isDueSoon(row.deadline) && (
+                        <span className="rounded bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700">
+                          Due soon
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    <StatusChip status={row.status} />
+                  </td>
                   <td className="px-4 py-3 text-sm text-gray-700">{row.details || "—"}</td>
                   <td className="px-4 py-3 text-sm text-blue-700 underline">
                     {row.portal ? (
-                      <a href={row.portal} target="_blank" rel="noreferrer">Portal</a>
+                      <a href={row.portal} target="_blank" rel="noreferrer">
+                        Portal
+                      </a>
                     ) : (
                       "—"
                     )}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      onClick={() => deleteRow(row.id)}
+                      className="rounded px-2 py-1 text-xs text-red-700 hover:bg-red-50"
+                      aria-label={`Delete ${row.company} ${row.position}`}
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
 
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-sm text-gray-500">
+                  <td colSpan={8} className="px-4 py-10 text-center text-sm text-gray-500">
                     No rows match your filters.
                   </td>
                 </tr>
@@ -259,9 +321,13 @@ export default function UofGJobTracker() {
 
         {/* Footer note */}
         <p className="text-xs text-gray-500">
-          Tip: add a <span className="font-medium">Resume Version</span> column or keep it in Details to mirror your sheet exactly.
+          Tip: add a <span className="font-medium">Resume Version</span> column or keep it in Details to mirror your
+          sheet exactly.
         </p>
       </div>
+
+      {/* Modal */}
+      <AddJobModal open={modalOpen} onClose={() => setModalOpen(false)} onCreate={addRow} />
     </div>
   );
 }
