@@ -2,9 +2,9 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 
-/* =========================
+/* =========================================================
    Types
-   ========================= */
+   ========================================================= */
 
 export type JobStatus =
   | "submitted"
@@ -26,37 +26,9 @@ export interface JobRow {
   resumeVersion?: string;
 }
 
-/* =========================
-   Tiny localStorage hook (inline)
-   ========================= */
-
-function useLocalRows<T>(key: string, initial: T) {
-  const [state, setState] = useState<T>(initial);
-
-  // hydrate
-  useEffect(() => {
-    try {
-      const raw = typeof window !== "undefined" ? localStorage.getItem(key) : null;
-      if (raw) setState(JSON.parse(raw));
-    } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
-
-  // persist
-  useEffect(() => {
-    try {
-      if (typeof window !== "undefined") {
-        localStorage.setItem(key, JSON.stringify(state));
-      }
-    } catch {}
-  }, [key, state]);
-
-  return [state, setState] as const;
-}
-
-/* =========================
+/* =========================================================
    Seed data (first run only)
-   ========================= */
+   ========================================================= */
 
 const mockData: JobRow[] = [
   {
@@ -91,9 +63,9 @@ const mockData: JobRow[] = [
   },
 ];
 
-/* =========================
-   UI helpers
-   ========================= */
+/* =========================================================
+   UI helpers (no hooks here)
+   ========================================================= */
 
 const STATUS_LABEL: Record<JobStatus, string> = {
   saved: "Saved",
@@ -141,9 +113,41 @@ function isDueSoon(date?: string) {
   return ms >= 0 && ms <= 3 * 24 * 60 * 60 * 1000; // within 3 days
 }
 
-/* =========================
-   Add Job Modal (inline)
-   ========================= */
+/* =========================================================
+   Tiny localStorage hook (custom hook name starts with "use")
+   ========================================================= */
+
+function useLocalRows<T>(key: string, initial: T) {
+  const [state, setState] = useState<T>(initial);
+
+  // hydrate on mount
+  useEffect(() => {
+    try {
+      const raw = typeof window !== "undefined" ? localStorage.getItem(key) : null;
+      if (raw) setState(JSON.parse(raw));
+    } catch {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  // persist on change
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem(key, JSON.stringify(state));
+      }
+    } catch {
+      // ignore
+    }
+  }, [key, state]);
+
+  return [state, setState] as const;
+}
+
+/* =========================================================
+   Add Job Modal (component, hooks safe here)
+   ========================================================= */
 
 function AddJobModal({
   open,
@@ -277,9 +281,9 @@ function AddJobModal({
   );
 }
 
-/* =========================
-   Edit Job Modal (inline)
-   ========================= */
+/* =========================================================
+   Edit Job Modal (component, hooks safe here)
+   ========================================================= */
 
 function EditJobModal({
   open,
@@ -303,6 +307,7 @@ function EditJobModal({
     portal: "",
   });
 
+  // Prefill from selected row
   useEffect(() => {
     if (!row) return;
     setForm({
@@ -421,9 +426,9 @@ function EditJobModal({
   );
 }
 
-/* =========================
+/* =========================================================
    Main component
-   ========================= */
+   ========================================================= */
 
 export default function UofGJobTracker() {
   // Persist rows locally; seed from mockData first time
@@ -506,7 +511,7 @@ export default function UofGJobTracker() {
         <header className="flex items-end justify-between">
           <div>
             <h1 className="text-2xl font-bold">Internship & Job Tracker</h1>
-            <p className="text-sm text-gray-600">Client-only tracker with local persistence (v0.3).</p>
+            <p className="text-sm text-gray-600">Client-only tracker with local persistence (v0.4).</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <input
@@ -629,7 +634,7 @@ export default function UofGJobTracker() {
           </table>
         </section>
 
-        <p className="text-[10px] text-gray-400">build v0.3</p>
+        <p className="text-[10px] text-gray-400">build v0.4</p>
       </div>
 
       {/* Modals */}
