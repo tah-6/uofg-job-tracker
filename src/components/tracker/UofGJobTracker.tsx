@@ -46,7 +46,7 @@ export default function UofGJobTracker() {
       .sort((a, b) => (a.deadline || "").localeCompare(b.deadline || ""));
   }, [rows, statusFilter, query]);
 
-  function addRow(newRow: JobRow) { setRows(prev => [...prev, newRow]); }
+  function addRow(newRow: JobRow) { setRows(prev => [...prev, newRow]);  }
   function updateRow(patch: JobRow) { setRows(prev => prev.map(r => (r.id === patch.id ? { ...r, ...patch } : r))); }
   function deleteRow(id: string) { setRows(prev => prev.filter(r => r.id !== id)); }
 
@@ -92,8 +92,9 @@ export default function UofGJobTracker() {
       // replace entire dataset, or merge — your call:
       setRows(rows);
       alert("Imported JSON successfully.");
-    } catch (err: any) {
-      alert(err?.message || "Failed to import JSON.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to import JSON.";
+      alert(msg);
     } finally {
       e.currentTarget.value = "";
     }
@@ -111,8 +112,9 @@ export default function UofGJobTracker() {
       const rows = await importFromCSV(f);
       setRows(rows);
       alert("Imported CSV successfully.");
-    } catch (err: any) {
-      alert(err?.message || "Failed to import CSV.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to import JSON.";
+      alert(msg);
     } finally {
       e.currentTarget.value = "";
     }

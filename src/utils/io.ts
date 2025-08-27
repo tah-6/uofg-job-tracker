@@ -1,6 +1,14 @@
 // src/utils/io.ts
 // Dumb, dependable import/export helpers for Job rows.
 // No UI, no state, just pure functions + a couple of browser utilities.
+"use client";
+
+// safe UUID for browsers and build-time
+export function uuid() {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? (crypto as Crypto).randomUUID()
+    : Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
 
 import type { JobRow, JobStatus } from "@/types/job";
 
@@ -102,7 +110,7 @@ export async function importFromCSV(file: File): Promise<JobRow[]> {
   if (missing.length) {
     throw new Error(`CSV missing required column(s): ${missing.join(", ")}`);
   }
-  const indices: Record<CsvHeaders, number> = {} as any;
+  const indices = {} as Record<CsvHeaders, number>;
   CSV_HEADERS.forEach((h) => {
     indices[h] = header.indexOf(h);
   });
@@ -112,7 +120,7 @@ export async function importFromCSV(file: File): Promise<JobRow[]> {
     const row = rows[i];
     if (row.length === 1 && row[0] === "") continue; // skip blank lines
     const obj: Partial<JobRow> = {
-      id: row[indices.id] || crypto.randomUUID(),
+      id: row[indices.id] || uuid(),
       company: row[indices.company],
       position: row[indices.position],
       dateApplied: emptyToUndef(row[indices.dateApplied]),
@@ -136,7 +144,7 @@ function validateRow(raw: unknown): JobRow {
   if (!raw || typeof raw !== "object") throw new Error("Row is not an object.");
   const r = raw as Partial<JobRow>;
   if (!r.company || !r.position) throw new Error("Row missing required fields: company and position.");
-  const id = r.id ?? crypto.randomUUID();
+  const id = r.id ?? uuid();
   const status = normalizeStatus(r.status);
   // very light date sanity (YYYY-MM-DD or empty)
   const dateApplied = normalizeDate(r.dateApplied);
@@ -182,7 +190,7 @@ function normalizeDate(d: unknown): string | undefined {
 function ensureUniqueIds(rows: JobRow[]) {
   const seen = new Set<string>();
   rows.forEach((r) => {
-    if (!r.id || seen.has(r.id)) r.id = crypto.randomUUID();
+    if (!r.id || seen.has(r.id)) r.id = uuid();
     seen.add(r.id);
   });
 }

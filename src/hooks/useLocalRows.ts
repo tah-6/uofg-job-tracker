@@ -9,7 +9,6 @@ export function useLocalRows<T>(key: string, initial: T) {
       const raw = typeof window !== "undefined" ? localStorage.getItem(key) : null;
       if (raw) setState(JSON.parse(raw));
     } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
   useEffect(() => {
