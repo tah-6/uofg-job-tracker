@@ -497,20 +497,6 @@ export default function UofGJobTracker() {
     setRows((prev) => prev.filter((r) => r.id !== id));
   }
 
-  // Keyboard shortcuts: A = Add, / = focus search
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      if (key === "a") setModalOpen(true);
-      if (key === "/") {
-        e.preventDefault();
-        (document.getElementById("search") as HTMLInputElement | null)?.focus();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
   /* ===== Render ===== */
 
   return (
