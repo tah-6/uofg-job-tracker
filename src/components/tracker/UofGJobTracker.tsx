@@ -5,6 +5,8 @@ import { useLocalRows } from "@/hooks/useLocalRows";
 import AddJobModal from "./AddJobModal";
 import EditJobModal from "./EditJobModal";
 import JobTable from "./JobTable";
+import { exportToCSV, exportToJSON, importFromCSV, importFromJSON } from "@/utils/io";
+
 
 const mockData: JobRow[] = [
   { id: "1", company: "Rockwell Automation", position: "Manufacturing/Embedded Co-op", dateApplied: "2025-09-20", deadline: "2025-09-25", status: "submitted", details: "Resume v3, Cover v2", portal: "https://careers.rockwellautomation.com/" },
@@ -77,6 +79,70 @@ export default function UofGJobTracker() {
             <button onClick={() => setAddOpen(true)} className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">
               Add Job
             </button>
+            <input
+  id="import-json"
+  type="file"
+  accept=".json,application/json"
+  className="hidden"
+  onChange={async (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    try {
+      const rows = await importFromJSON(f);
+      // replace entire dataset, or merge — your call:
+      setRows(rows);
+      alert("Imported JSON successfully.");
+    } catch (err: any) {
+      alert(err?.message || "Failed to import JSON.");
+    } finally {
+      e.currentTarget.value = "";
+    }
+  }}
+/>
+<input
+  id="import-csv"
+  type="file"
+  accept=".csv,text/csv"
+  className="hidden"
+  onChange={async (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    try {
+      const rows = await importFromCSV(f);
+      setRows(rows);
+      alert("Imported CSV successfully.");
+    } catch (err: any) {
+      alert(err?.message || "Failed to import CSV.");
+    } finally {
+      e.currentTarget.value = "";
+    }
+  }}
+/>
+
+<button
+  onClick={() => exportToJSON(rows)}
+  className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
+>
+  Export JSON
+</button>
+<button
+  onClick={() => exportToCSV(rows)}
+  className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
+>
+  Export CSV
+</button>
+<button
+  onClick={() => document.getElementById("import-json")?.click()}
+  className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
+>
+  Import JSON
+</button>
+<button
+  onClick={() => document.getElementById("import-csv")?.click()}
+  className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
+>
+  Import CSV
+</button>
           </div>
         </header>
 
