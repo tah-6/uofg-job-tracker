@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import AddJobModal from "@/components/AddJobModal";
-import { useLocalRows } from "@/hooks/useLocalRows";
+import React, { useEffect, useMemo, useState } from "react";
 
-/** Types */
+/* =========================
+   Types
+   ========================= */
+
 export type JobStatus =
   | "submitted"
   | "in_progress"
@@ -17,15 +18,46 @@ export interface JobRow {
   id: string;
   company: string;
   position: string;
-  dateApplied?: string;
-  deadline?: string;
+  dateApplied?: string; // YYYY-MM-DD
+  deadline?: string; // YYYY-MM-DD
   status: JobStatus;
   details?: string;
   portal?: string;
   resumeVersion?: string;
 }
 
-/** Seed data */
+/* =========================
+   Tiny localStorage hook (inline)
+   ========================= */
+
+function useLocalRows<T>(key: string, initial: T) {
+  const [state, setState] = useState<T>(initial);
+
+  // hydrate
+  useEffect(() => {
+    try {
+      const raw = typeof window !== "undefined" ? localStorage.getItem(key) : null;
+      if (raw) setState(JSON.parse(raw));
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  // persist
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem(key, JSON.stringify(state));
+      }
+    } catch {}
+  }, [key, state]);
+
+  return [state, setState] as const;
+}
+
+/* =========================
+   Seed data (first run only)
+   ========================= */
+
 const mockData: JobRow[] = [
   {
     id: "1",
@@ -47,9 +79,22 @@ const mockData: JobRow[] = [
     details: "Recruiter reply pending",
     portal: "https://www.linamar.com/careers",
   },
+  {
+    id: "3",
+    company: "BlackBerry QNX",
+    position: "Software Co-op (C/C++)",
+    dateApplied: "2025-09-15",
+    deadline: "2025-09-30",
+    status: "interview",
+    details: "Phone screen booked 09/24",
+    portal: "https://blackberry.qnx.com/",
+  },
 ];
 
-/** Labels & colors */
+/* =========================
+   UI helpers
+   ========================= */
+
 const STATUS_LABEL: Record<JobStatus, string> = {
   saved: "Saved",
   submitted: "Submitted",
@@ -70,9 +115,7 @@ const STATUS_COLOR: Record<JobStatus, string> = {
 
 function StatusChip({ status }: { status: JobStatus }) {
   return (
-    <span
-      className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLOR[status]}`}
-    >
+    <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLOR[status]}`}>
       {STATUS_LABEL[status]}
     </span>
   );
@@ -95,15 +138,323 @@ function formatDate(d?: string) {
 function isDueSoon(date?: string) {
   if (!date) return false;
   const ms = new Date(date).getTime() - Date.now();
-  return ms >= 0 && ms <= 3 * 24 * 60 * 60 * 1000;
+  return ms >= 0 && ms <= 3 * 24 * 60 * 60 * 1000; // within 3 days
 }
 
-export default function UofGJobTracker() {
-  const [rows, setRows] = useLocalRows<JobRow[]>("uofg-jobs", mockData);
-  const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<JobStatus | "all">("all");
-  const [modalOpen, setModalOpen] = useState(false);
+/* =========================
+   Add Job Modal (inline)
+   ========================= */
 
+function AddJobModal({
+  open,
+  onClose,
+  onCreate,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreate: (row: JobRow) => void;
+}) {
+  const [form, setForm] = useState({
+    company: "",
+    position: "",
+    dateApplied: "",
+    deadline: "",
+    status: "saved" as JobStatus,
+    details: "",
+    portal: "",
+  });
+
+  if (!open) return null;
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.company.trim() || !form.position.trim()) return;
+    onCreate({
+      id: crypto.randomUUID(),
+      company: form.company.trim(),
+      position: form.position.trim(),
+      dateApplied: form.dateApplied || undefined,
+      deadline: form.deadline || undefined,
+      status: form.status,
+      details: form.details || undefined,
+      portal: form.portal || undefined,
+    });
+    onClose();
+    setForm({
+      company: "",
+      position: "",
+      dateApplied: "",
+      deadline: "",
+      status: "saved",
+      details: "",
+      portal: "",
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Add Job</h2>
+          <button onClick={onClose} className="rounded px-2 py-1 text-sm text-gray-600 hover:bg-gray-100">
+            Close
+          </button>
+        </div>
+        <form onSubmit={submit} className="grid grid-cols-1 gap-3">
+          <input
+            className="rounded border px-3 py-2"
+            placeholder="Company"
+            value={form.company}
+            onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))}
+          />
+          <input
+            className="rounded border px-3 py-2"
+            placeholder="Position"
+            value={form.position}
+            onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <label className="text-sm text-gray-600">
+              <span className="mb-1 block">Date Applied</span>
+              <input
+                type="date"
+                className="w-full rounded border px-3 py-2"
+                value={form.dateApplied}
+                onChange={(e) => setForm((f) => ({ ...f, dateApplied: e.target.value }))}
+              />
+            </label>
+            <label className="text-sm text-gray-600">
+              <span className="mb-1 block">Deadline</span>
+              <input
+                type="date"
+                className="w-full rounded border px-3 py-2"
+                value={form.deadline}
+                onChange={(e) => setForm((f) => ({ ...f, deadline: e.target.value }))}
+              />
+            </label>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="text-sm text-gray-600">
+              <span className="mb-1 block">Status</span>
+              <select
+                className="w-full rounded border px-3 py-2"
+                value={form.status}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setForm((f) => ({ ...f, status: e.target.value as JobStatus }))
+                }
+              >
+                {(["saved", "submitted", "in_progress", "interview", "offer", "rejected"] as JobStatus[]).map((s) => (
+                  <option key={s} value={s}>
+                    {s.replace("_", " ")}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <input
+              className="rounded border px-3 py-2"
+              placeholder="Portal URL"
+              value={form.portal}
+              onChange={(e) => setForm((f) => ({ ...f, portal: e.target.value }))}
+            />
+          </div>
+          <textarea
+            className="min-h-[80px] rounded border px-3 py-2"
+            placeholder="Details / notes"
+            value={form.details}
+            onChange={(e) => setForm((f) => ({ ...f, details: e.target.value }))}
+          />
+          <div className="mt-1 flex justify-end gap-2">
+            <button type="button" onClick={onClose} className="rounded border px-3 py-2">
+              Cancel
+            </button>
+            <button type="submit" className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+              Add
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* =========================
+   Edit Job Modal (inline)
+   ========================= */
+
+function EditJobModal({
+  open,
+  row,
+  onClose,
+  onUpdate,
+}: {
+  open: boolean;
+  row: JobRow | null;
+  onClose: () => void;
+  onUpdate: (row: JobRow) => void;
+}) {
+  const [form, setForm] = useState({
+    id: "",
+    company: "",
+    position: "",
+    dateApplied: "",
+    deadline: "",
+    status: "saved" as JobStatus,
+    details: "",
+    portal: "",
+  });
+
+  useEffect(() => {
+    if (!row) return;
+    setForm({
+      id: row.id,
+      company: row.company ?? "",
+      position: row.position ?? "",
+      dateApplied: row.dateApplied ?? "",
+      deadline: row.deadline ?? "",
+      status: row.status,
+      details: row.details ?? "",
+      portal: row.portal ?? "",
+    });
+  }, [row]);
+
+  if (!open || !row) return null;
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.company.trim() || !form.position.trim()) return;
+    onUpdate({
+      id: form.id,
+      company: form.company.trim(),
+      position: form.position.trim(),
+      dateApplied: form.dateApplied || undefined,
+      deadline: form.deadline || undefined,
+      status: form.status,
+      details: form.details || undefined,
+      portal: form.portal || undefined,
+    });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Edit Job</h2>
+          <button onClick={onClose} className="rounded px-2 py-1 text-sm text-gray-600 hover:bg-gray-100">
+            Close
+          </button>
+        </div>
+        <form onSubmit={submit} className="grid grid-cols-1 gap-3">
+          <input
+            className="rounded border px-3 py-2"
+            placeholder="Company"
+            value={form.company}
+            onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))}
+          />
+          <input
+            className="rounded border px-3 py-2"
+            placeholder="Position"
+            value={form.position}
+            onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <label className="text-sm text-gray-600">
+              <span className="mb-1 block">Date Applied</span>
+              <input
+                type="date"
+                className="w-full rounded border px-3 py-2"
+                value={form.dateApplied}
+                onChange={(e) => setForm((f) => ({ ...f, dateApplied: e.target.value }))}
+              />
+            </label>
+            <label className="text-sm text-gray-600">
+              <span className="mb-1 block">Deadline</span>
+              <input
+                type="date"
+                className="w-full rounded border px-3 py-2"
+                value={form.deadline}
+                onChange={(e) => setForm((f) => ({ ...f, deadline: e.target.value }))}
+              />
+            </label>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="text-sm text-gray-600">
+              <span className="mb-1 block">Status</span>
+              <select
+                className="w-full rounded border px-3 py-2"
+                value={form.status}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setForm((f) => ({ ...f, status: e.target.value as JobStatus }))
+                }
+              >
+                {(["saved", "submitted", "in_progress", "interview", "offer", "rejected"] as JobStatus[]).map((s) => (
+                  <option key={s} value={s}>
+                    {s.replace("_", " ")}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <input
+              className="rounded border px-3 py-2"
+              placeholder="Portal URL"
+              value={form.portal}
+              onChange={(e) => setForm((f) => ({ ...f, portal: e.target.value }))}
+            />
+          </div>
+          <textarea
+            className="min-h-[80px] rounded border px-3 py-2"
+            placeholder="Details / notes"
+            value={form.details}
+            onChange={(e) => setForm((f) => ({ ...f, details: e.target.value }))}
+          />
+          <div className="mt-1 flex justify-end gap-2">
+            <button type="button" onClick={onClose} className="rounded border px-3 py-2">
+              Cancel
+            </button>
+            <button type="submit" className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+              Save
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* =========================
+   Main component
+   ========================= */
+
+export default function UofGJobTracker() {
+  // Persist rows locally; seed from mockData first time
+  const [rows, setRows] = useLocalRows<JobRow[]>("uofg-jobs", mockData);
+
+  // Filters (persist them too)
+  const [query, setQuery] = useState(
+    (typeof window !== "undefined" && localStorage.getItem("uofg-query")) || ""
+  );
+  const [statusFilter, setStatusFilter] = useState<JobStatus | "all">(
+    (typeof window !== "undefined" &&
+      (localStorage.getItem("uofg-status") as JobStatus | "all")) || "all"
+  );
+
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") localStorage.setItem("uofg-query", query);
+    } catch {}
+  }, [query]);
+
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") localStorage.setItem("uofg-status", statusFilter);
+    } catch {}
+  }, [statusFilter]);
+
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<JobRow | null>(null);
+
+  // Derived counts
   const counts = useMemo(() => {
     const base: Record<JobStatus, number> = {
       saved: 0,
@@ -119,11 +470,11 @@ export default function UofGJobTracker() {
     return base;
   }, [rows]);
 
+  // Filtered + sorted list
   const filtered = useMemo(() => {
     return rows
       .filter((r) => {
-        const matchesStatus =
-          statusFilter === "all" ? true : r.status === statusFilter;
+        const matchesStatus = statusFilter === "all" ? true : r.status === statusFilter;
         const hay = `${r.company} ${r.position} ${r.details ?? ""}`.toLowerCase();
         const matchesQuery = hay.includes(query.toLowerCase());
         return matchesStatus && matchesQuery;
@@ -131,21 +482,36 @@ export default function UofGJobTracker() {
       .sort((a, b) => (a.deadline || "").localeCompare(b.deadline || ""));
   }, [rows, statusFilter, query]);
 
-  const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(e.target.value);
-  };
-
-  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  // Handlers
+  const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value);
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) =>
     setStatusFilter(e.target.value as JobStatus | "all");
-  };
 
   function addRow(newRow: JobRow) {
     setRows((prev) => [...prev, newRow]);
   }
-
+  function updateRow(patch: JobRow) {
+    setRows((prev) => prev.map((r) => (r.id === patch.id ? { ...r, ...patch } : r)));
+  }
   function deleteRow(id: string) {
     setRows((prev) => prev.filter((r) => r.id !== id));
   }
+
+  // Keyboard shortcuts: A = Add, / = focus search
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      if (key === "a") setModalOpen(true);
+      if (key === "/") {
+        e.preventDefault();
+        (document.getElementById("search") as HTMLInputElement | null)?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  /* ===== Render ===== */
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -154,11 +520,9 @@ export default function UofGJobTracker() {
         <header className="flex items-end justify-between">
           <div>
             <h1 className="text-2xl font-bold">Internship & Job Tracker</h1>
-            <p className="text-sm text-gray-600">
-              Mirror of your spreadsheet: header counts + table, but interactive.
-            </p>
+            <p className="text-sm text-gray-600">Client-only tracker with local persistence (v0.3).</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <input
               id="search"
               value={query}
@@ -172,9 +536,9 @@ export default function UofGJobTracker() {
               className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
               <option value="all">All Statuses</option>
-              {Object.keys(STATUS_LABEL).map((k) => (
+              {(Object.keys(STATUS_LABEL) as JobStatus[]).map((k) => (
                 <option key={k} value={k}>
-                  {STATUS_LABEL[k as JobStatus]}
+                  {STATUS_LABEL[k]}
                 </option>
               ))}
             </select>
@@ -187,13 +551,10 @@ export default function UofGJobTracker() {
           </div>
         </header>
 
-        {/* Counts */}
+        {/* Key / Counts */}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {(Object.keys(STATUS_LABEL) as JobStatus[]).map((st) => (
-            <div
-              key={st}
-              className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
-            >
+            <div key={st} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
               <div className="text-xs text-gray-500">{STATUS_LABEL[st]}</div>
               <div className="mt-1 text-2xl font-semibold">{counts[st]}</div>
             </div>
@@ -227,15 +588,9 @@ export default function UofGJobTracker() {
             <tbody className="divide-y divide-gray-100">
               {filtered.map((row) => (
                 <tr key={row.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                    {row.company}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-800">
-                    {row.position}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-700">
-                    {formatDate(row.dateApplied)}
-                  </td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{row.company}</td>
+                  <td className="px-4 py-3 text-sm text-gray-800">{row.position}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{formatDate(row.dateApplied)}</td>
                   <td className="px-4 py-3 text-sm text-gray-700">
                     <div className="flex items-center gap-2">
                       {formatDate(row.deadline)}
@@ -249,9 +604,7 @@ export default function UofGJobTracker() {
                   <td className="px-4 py-3 text-sm">
                     <StatusChip status={row.status} />
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-700">
-                    {row.details || "—"}
-                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{row.details || "—"}</td>
                   <td className="px-4 py-3 text-sm text-blue-700 underline">
                     {row.portal ? (
                       <a href={row.portal} target="_blank" rel="noreferrer">
@@ -261,7 +614,13 @@ export default function UofGJobTracker() {
                       "—"
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right space-x-2">
+                    <button
+                      onClick={() => setEditing(row)}
+                      className="rounded px-2 py-1 text-xs text-blue-700 hover:bg-blue-50"
+                    >
+                      Edit
+                    </button>
                     <button
                       onClick={() => deleteRow(row.id)}
                       className="rounded px-2 py-1 text-xs text-red-700 hover:bg-red-50"
@@ -272,12 +631,10 @@ export default function UofGJobTracker() {
                   </td>
                 </tr>
               ))}
+
               {filtered.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={8}
-                    className="px-4 py-10 text-center text-sm text-gray-500"
-                  >
+                  <td colSpan={8} className="px-4 py-10 text-center text-sm text-gray-500">
                     No rows match your filters.
                   </td>
                 </tr>
@@ -285,12 +642,20 @@ export default function UofGJobTracker() {
             </tbody>
           </table>
         </section>
+
+        <p className="text-[10px] text-gray-400">build v0.3</p>
       </div>
 
-      <AddJobModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onCreate={addRow}
+      {/* Modals */}
+      <AddJobModal open={modalOpen} onClose={() => setModalOpen(false)} onCreate={addRow} />
+      <EditJobModal
+        open={!!editing}
+        row={editing}
+        onClose={() => setEditing(null)}
+        onUpdate={(r) => {
+          updateRow(r);
+          setEditing(null);
+        }}
       />
     </div>
   );
