@@ -17,15 +17,15 @@ export interface JobRow {
   id: string;
   company: string;
   position: string;
-  dateApplied?: string; // YYYY-MM-DD
-  deadline?: string; // YYYY-MM-DD
+  dateApplied?: string;
+  deadline?: string;
   status: JobStatus;
   details?: string;
   portal?: string;
   resumeVersion?: string;
 }
 
-/** Seed data for first run; afterwards localStorage takes over */
+/** Seed data */
 const mockData: JobRow[] = [
   {
     id: "1",
@@ -46,46 +46,6 @@ const mockData: JobRow[] = [
     status: "in_progress",
     details: "Recruiter reply pending",
     portal: "https://www.linamar.com/careers",
-  },
-  {
-    id: "3",
-    company: "BlackBerry QNX",
-    position: "Software Co-op (C/C++)",
-    dateApplied: "2025-09-15",
-    deadline: "2025-09-30",
-    status: "interview",
-    details: "Phone screen booked 09/24",
-    portal: "https://blackberry.qnx.com/",
-  },
-  {
-    id: "4",
-    company: "Waterloo Startup Inc.",
-    position: "Full-stack Intern",
-    dateApplied: "2025-09-10",
-    deadline: "2025-09-22",
-    status: "rejected",
-    details: "Generic rejection (ghosted)",
-    portal: "https://example.com",
-  },
-  {
-    id: "5",
-    company: "Magna",
-    position: "Automation Co-op",
-    dateApplied: "2025-09-12",
-    deadline: "2025-09-27",
-    status: "offer",
-    details: "Offer pending signature",
-    portal: "https://www.magna.com/careers",
-  },
-  {
-    id: "6",
-    company: "Shopify",
-    position: "Backend Developer Intern",
-    dateApplied: "2025-09-11",
-    deadline: "2025-09-29",
-    status: "saved",
-    details: "Needs custom resume v4",
-    portal: "https://www.shopify.com/careers",
   },
 ];
 
@@ -108,10 +68,11 @@ const STATUS_COLOR: Record<JobStatus, string> = {
   rejected: "bg-red-100 text-red-800",
 };
 
-/** Small helpers */
 function StatusChip({ status }: { status: JobStatus }) {
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLOR[status]}`}>
+    <span
+      className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLOR[status]}`}
+    >
       {STATUS_LABEL[status]}
     </span>
   );
@@ -131,24 +92,18 @@ function formatDate(d?: string) {
   }
 }
 
-
 function isDueSoon(date?: string) {
   if (!date) return false;
   const ms = new Date(date).getTime() - Date.now();
-  return ms >= 0 && ms <= 3 * 24 * 60 * 60 * 1000; // within 3 days
+  return ms >= 0 && ms <= 3 * 24 * 60 * 60 * 1000;
 }
 
-/** Component */
 export default function UofGJobTracker() {
-  // Persist rows locally; seed from mockData first time
   const [rows, setRows] = useLocalRows<JobRow[]>("uofg-jobs", mockData);
-
-  // UI state
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<JobStatus | "all">("all");
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Derived counts
   const counts = useMemo(() => {
     const base: Record<JobStatus, number> = {
       saved: 0,
@@ -164,11 +119,11 @@ export default function UofGJobTracker() {
     return base;
   }, [rows]);
 
-  // Filtering + sorting by deadline
   const filtered = useMemo(() => {
     return rows
       .filter((r) => {
-        const matchesStatus = statusFilter === "all" ? true : r.status === statusFilter;
+        const matchesStatus =
+          statusFilter === "all" ? true : r.status === statusFilter;
         const hay = `${r.company} ${r.position} ${r.details ?? ""}`.toLowerCase();
         const matchesQuery = hay.includes(query.toLowerCase());
         return matchesStatus && matchesQuery;
@@ -176,14 +131,12 @@ export default function UofGJobTracker() {
       .sort((a, b) => (a.deadline || "").localeCompare(b.deadline || ""));
   }, [rows, statusFilter, query]);
 
-  /** Handlers */
   const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
   };
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value as JobStatus | "all";
-    setStatusFilter(val);
+    setStatusFilter(e.target.value as JobStatus | "all");
   };
 
   function addRow(newRow: JobRow) {
@@ -194,7 +147,6 @@ export default function UofGJobTracker() {
     setRows((prev) => prev.filter((r) => r.id !== id));
   }
 
-  /** Render */
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -208,6 +160,7 @@ export default function UofGJobTracker() {
           </div>
           <div className="flex gap-2">
             <input
+              id="search"
               value={query}
               onChange={handleQueryChange}
               placeholder="Search company, position, notes"
@@ -231,22 +184,16 @@ export default function UofGJobTracker() {
             >
               Add Job
             </button>
-            <button onClick={() => exportCSV(rows)} className="rounded border px-3 py-2 text-sm">Export CSV</button>
-<label className="rounded border px-3 py-2 text-sm cursor-pointer">
-  Import CSV
-  <input type="file" accept=".csv" className="hidden" onChange={e => {
-    const f = e.target.files?.[0]; if (f) importCSV(f);
-    e.currentTarget.value = "";
-  }}/>
-  </label>
-
           </div>
         </header>
 
-        {/* Key / Counts */}
+        {/* Counts */}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {(Object.keys(STATUS_LABEL) as JobStatus[]).map((st) => (
-            <div key={st} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div
+              key={st}
+              className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+            >
               <div className="text-xs text-gray-500">{STATUS_LABEL[st]}</div>
               <div className="mt-1 text-2xl font-semibold">{counts[st]}</div>
             </div>
@@ -266,7 +213,7 @@ export default function UofGJobTracker() {
                   "Application Status",
                   "Details",
                   "Applicant Portal",
-                  "", // actions
+                  "",
                 ].map((h) => (
                   <th
                     key={h}
@@ -280,9 +227,15 @@ export default function UofGJobTracker() {
             <tbody className="divide-y divide-gray-100">
               {filtered.map((row) => (
                 <tr key={row.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{row.company}</td>
-                  <td className="px-4 py-3 text-sm text-gray-800">{row.position}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{formatDate(row.dateApplied)}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                    {row.company}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-800">
+                    {row.position}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-700">
+                    {formatDate(row.dateApplied)}
+                  </td>
                   <td className="px-4 py-3 text-sm text-gray-700">
                     <div className="flex items-center gap-2">
                       {formatDate(row.deadline)}
@@ -296,7 +249,9 @@ export default function UofGJobTracker() {
                   <td className="px-4 py-3 text-sm">
                     <StatusChip status={row.status} />
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{row.details || "—"}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">
+                    {row.details || "—"}
+                  </td>
                   <td className="px-4 py-3 text-sm text-blue-700 underline">
                     {row.portal ? (
                       <a href={row.portal} target="_blank" rel="noreferrer">
@@ -317,10 +272,12 @@ export default function UofGJobTracker() {
                   </td>
                 </tr>
               ))}
-
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-sm text-gray-500">
+                  <td
+                    colSpan={8}
+                    className="px-4 py-10 text-center text-sm text-gray-500"
+                  >
                     No rows match your filters.
                   </td>
                 </tr>
@@ -328,54 +285,13 @@ export default function UofGJobTracker() {
             </tbody>
           </table>
         </section>
-
-        {/* Footer note */}
-        <p className="text-xs text-gray-500">
-          Tip: add a <span className="font-medium">Resume Version</span> column or keep it in Details to mirror your
-          sheet exactly.
-        </p>
       </div>
 
-      {/* Modal */}
-      <AddJobModal open={modalOpen} onClose={() => setModalOpen(false)} onCreate={addRow} />
+      <AddJobModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onCreate={addRow}
+      />
     </div>
-    
   );
-
-  function updateRow(patch: JobRow) {
-    setRows(prev => prev.map(r => (r.id === patch.id ? { ...r, ...patch } : r)));
-  }
-
-  function exportCSV(rows: JobRow[]) {
-    const headers = ["company","position","dateApplied","deadline","status","details","portal"];
-    const lines = [headers.join(",")].concat(
-      rows.map(r => headers.map(h => JSON.stringify((r as any)[h] ?? "")).join(","))
-    );
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "applications.csv"; a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function importCSV(file: File) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const text = String(reader.result || "");
-      const [headerLine, ...rowsText] = text.split(/\r?\n/).filter(Boolean);
-      const headers = headerLine.split(",").map(h => h.replace(/(^\"|\"$)/g,""));
-      const toRow = (line: string): JobRow | null => {
-        const cells = line.match(/(\".*?\"|[^,]+)/g) ?? [];
-        const obj: any = {};
-        headers.forEach((h, i) => obj[h] = JSON.parse(cells[i] ?? "\"\""));
-        if (!obj.company || !obj.position) return null;
-        return { id: crypto.randomUUID(), ...obj };
-      };
-      const imported = rowsText.map(toRow).filter(Boolean) as JobRow[];
-      setRows(prev => [...prev, ...imported]);
-    };
-    reader.readAsText(file);
-  }
-  
-
 }
