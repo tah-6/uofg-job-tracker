@@ -12,17 +12,21 @@ type Props = {
 const STATUSES: (JobStatus | "saved")[] = ["saved", "submitted", "in_progress", "interview", "offer", "rejected"];
 
 export default function AddJobModal({ open, onClose, onCreate }: Props) {
+
   const [form, setForm] = useState({
     company: "",
     position: "",
     dateApplied: "",
     deadline: "",
-    status: "saved" as JobStatus | "saved",
+    status: "saved" as JobStatus,
     details: "",
     portal: "",
   });
+  const [jobUrl, setJobUrl] = useState("");
+  
 
   const submit = (e: React.FormEvent) => {
+    try{
     e.preventDefault();
     if (!form.company || !form.position) return;
     onCreate({
@@ -45,12 +49,40 @@ export default function AddJobModal({ open, onClose, onCreate }: Props) {
       details: "",
       portal: "",
     });
+  }
+  catch (err: unknown) {
+    console.error(err);
+    alert("Autofill failed. Paste manually this time.");
+  }
   };
+
+
+  async function autofill() {
+    if (!jobUrl.trim()) return;
+    try {
+      const res = await fetch(`/api/extract?url=${encodeURIComponent(jobUrl.trim())}`);
+      if (!res.ok) throw new Error("Could not extract data");
+      const data = await res.json(); // { company, position, details, deadline, portal }
+      setForm((f) => ({
+        ...f,
+        company: data.company || f.company,
+        position: data.position || f.position,
+        details: data.details || f.details,
+        deadline: data.deadline || f.deadline,
+        portal: data.portal || f.portal || jobUrl.trim(),
+      }));
+    } catch (e) {
+      alert("Autofill failed. Paste manually this time.");
+    }
+  }
+  
+
 
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl dark:bg-slate-800 dark:text-slate-100"></div>
       <div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Add Job</h2>
@@ -59,6 +91,23 @@ export default function AddJobModal({ open, onClose, onCreate }: Props) {
           </button>
         </div>
         <form onSubmit={submit} className="grid grid-cols-1 gap-3">
+        <div className="flex gap-2">
+  <input
+    placeholder="Paste job URL (LinkedIn, careers page...)"
+    value={jobUrl}
+    onChange={(e) => setJobUrl(e.target.value)}
+    className="flex-1 rounded border px-3 py-2 text-sm
+               bg-white text-gray-900 border-gray-300
+               dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700"
+  />
+  <button
+    type="button"
+    onClick={autofill}
+    className="rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+  >
+    Auto-fill
+  </button>
+</div>
           <input
             className="rounded border px-3 py-2"
             placeholder="Company"
