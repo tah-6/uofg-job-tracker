@@ -73,20 +73,24 @@ export default function UofGJobTracker() {
                   />
 
   
-            <select
-              value={statusFilter}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setStatusFilter(e.target.value as JobStatus | "all")
-              }
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-            >
-              <option value="all">All Statuses</option>
-              {(Object.keys(STATUS_LABEL) as JobStatus[]).map((k) => (
-                <option key={k} value={k}>
-                  {STATUS_LABEL[k]}
-                </option>
-              ))}
-            </select>
+                  <select
+                    value={statusFilter}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                      setStatusFilter(e.target.value as JobStatus | "all")
+                    }
+                    className="rounded-lg border px-3 py-2 text-sm 
+                              bg-white text-gray-900 border-gray-300 
+                              focus:outline-none focus:ring-2 focus:ring-blue-400
+                              dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700"
+                  >
+                    <option value="all">All Statuses</option>
+                    {(Object.keys(STATUS_LABEL) as JobStatus[]).map((k) => (
+                      <option key={k} value={k}>
+                        {STATUS_LABEL[k]}
+                      </option>
+                    ))}
+                  </select>
+
   
             {/* Hidden file inputs for import */}
             <input
@@ -137,22 +141,26 @@ export default function UofGJobTracker() {
             >
               Add Job
             </button>
-            <button onClick={() => exportToJSON(rows)} className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50">
-              Export JSON
-            </button>
-            <button onClick={() => exportToCSV(rows)} className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50">
+                      <button
+            onClick={() => exportToJSON(rows)}
+            className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 
+                      dark:border-slate-700 dark:hover:bg-slate-700">
+            Export JSON
+          </button>
+            <button onClick={() => exportToCSV(rows)} className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 
+            dark:border-slate-700 dark:hover:bg-slate-700">
               Export CSV
             </button>
             <button
               onClick={() => document.getElementById("import-json")?.click()}
-              className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
-            >
+              className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50
+              dark:border-slate-700 dark:hover:bg-slate-700">
               Import JSON
             </button>
             <button
               onClick={() => document.getElementById("import-csv")?.click()}
-              className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
-            >
+              className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50
+              dark:border-slate-700 dark:hover:bg-slate-700">
               Import CSV
             </button>
           </div>
