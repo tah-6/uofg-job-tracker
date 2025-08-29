@@ -184,7 +184,7 @@ export default function UofGJobTracker() {
         {/* Table (and mobile cards if you added them inside JobTable) */}
         <JobTable rows={filtered} onEdit={(r) => setEditing(r)} onDelete={deleteRow} />
   
-        <p className="text-[10px] text-gray-400">build modular v1</p>
+        <p className="text-[10px] text-gray-400">Taha Irfan</p>
       </div>
   
       {/* Modals live at root level so they can overlay */}
