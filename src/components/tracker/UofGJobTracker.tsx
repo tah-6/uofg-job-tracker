@@ -60,13 +60,18 @@ export default function UofGJobTracker() {
           </div>
   
           <div className="flex flex-wrap gap-2">
-            <input
-              id="search"
-              value={query}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
-              placeholder="Search company, position, notes"
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
+                            <input
+                    id="search"
+                    value={query}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
+                    placeholder="Search company, position, notes"
+                    className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm 
+                              text-gray-900 placeholder-gray-500 
+                              focus:outline-none focus:ring-2 focus:ring-blue-400
+                              dark:bg-slate-800 dark:border-slate-700 
+                              dark:text-slate-100 dark:placeholder-slate-400"
+                  />
+
   
             <select
               value={statusFilter}
@@ -155,13 +160,18 @@ export default function UofGJobTracker() {
   
         {/* Status counts */}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {(Object.keys(counts) as JobStatus[]).map((st) => (
-            <div key={st} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-              <div className="text-xs text-gray-500">{STATUS_LABEL[st]}</div>
-              <div className="mt-1 text-2xl font-semibold">{counts[st]}</div>
-            </div>
-          ))}
-        </section>
+  {(Object.keys(counts) as JobStatus[]).map((st) => (
+    <div
+      key={st}
+      className="rounded-2xl border p-4 shadow-sm
+                 bg-white text-gray-900 border-gray-200
+                 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700"
+    >
+      <div className="text-xs text-gray-600 dark:text-slate-300">{STATUS_LABEL[st]}</div>
+      <div className="mt-1 text-2xl font-semibold">{counts[st]}</div>
+    </div>
+  ))}
+</section>
   
         {/* Table (and mobile cards if you added them inside JobTable) */}
         <JobTable rows={filtered} onEdit={(r) => setEditing(r)} onDelete={deleteRow} />

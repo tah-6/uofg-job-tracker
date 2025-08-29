@@ -16,7 +16,9 @@ export default function JobTable({
   return (
     <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
       <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-100">
+        <thead className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider 
+               text-gray-700 bg-gray-100 
+               dark:text-slate-200 dark:bg-slate-800">
           <tr>
             {["Company","Position","Date Applied","Deadline","Application Status","Details","Applicant Portal",""].map((h) => (
               <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
@@ -25,7 +27,7 @@ export default function JobTable({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody className="divide-y divide-gray-100 dark:divide-slate-700 text-gray-900 dark:text-slate-100">
           {rows.map((row) => (
             <tr key={row.id} className="hover:bg-gray-50">
               <td className="px-4 py-3 text-sm font-medium text-gray-900">{row.company}</td>
