@@ -51,13 +51,14 @@ export default function UofGJobTracker() {
   function deleteRow(id: string) { setRows(prev => prev.filter(r => r.id !== id)); }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 text-gray-900 p-6 dark:bg-slate-900 dark:text-slate-100">
       <div className="mx-auto max-w-6xl space-y-6">
         <header className="flex items-end justify-between">
           <div>
             <h1 className="text-2xl font-bold">Internship & Job Tracker</h1>
             <p className="text-sm text-gray-600">Client-only tracker with local persistence (modular).</p>
           </div>
+  
           <div className="flex flex-wrap gap-2">
             <input
               id="search"
@@ -66,104 +67,119 @@ export default function UofGJobTracker() {
               placeholder="Search company, position, notes"
               className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
+  
             <select
               value={statusFilter}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value as JobStatus | "all")}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                setStatusFilter(e.target.value as JobStatus | "all")
+              }
               className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
               <option value="all">All Statuses</option>
-              {(Object.keys(STATUS_LABEL) as JobStatus[]).map(k => (
-                <option key={k} value={k}>{STATUS_LABEL[k]}</option>
+              {(Object.keys(STATUS_LABEL) as JobStatus[]).map((k) => (
+                <option key={k} value={k}>
+                  {STATUS_LABEL[k]}
+                </option>
               ))}
             </select>
-            <button onClick={() => setAddOpen(true)} className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">
+  
+            {/* Hidden file inputs for import */}
+            <input
+              id="import-json"
+              type="file"
+              accept=".json,application/json"
+              className="hidden"
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                try {
+                  const rows = await importFromJSON(f);
+                  setRows(rows);
+                  alert("Imported JSON successfully.");
+                } catch (err: unknown) {
+                  const msg = err instanceof Error ? err.message : "Failed to import JSON.";
+                  alert(msg);
+                } finally {
+                  e.currentTarget.value = "";
+                }
+              }}
+            />
+            <input
+              id="import-csv"
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                try {
+                  const rows = await importFromCSV(f);
+                  setRows(rows);
+                  alert("Imported CSV successfully.");
+                } catch (err: unknown) {
+                  const msg = err instanceof Error ? err.message : "Failed to import CSV.";
+                  alert(msg);
+                } finally {
+                  e.currentTarget.value = "";
+                }
+              }}
+            />
+  
+            {/* Action buttons */}
+            <button
+              onClick={() => setAddOpen(true)}
+              className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
               Add Job
             </button>
-            <input
-  id="import-json"
-  type="file"
-  accept=".json,application/json"
-  className="hidden"
-  onChange={async (e) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    try {
-      const rows = await importFromJSON(f);
-      // replace entire dataset, or merge — your call:
-      setRows(rows);
-      alert("Imported JSON successfully.");
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to import JSON.";
-      alert(msg);
-    } finally {
-      e.currentTarget.value = "";
-    }
-  }}
-/>
-<input
-  id="import-csv"
-  type="file"
-  accept=".csv,text/csv"
-  className="hidden"
-  onChange={async (e) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    try {
-      const rows = await importFromCSV(f);
-      setRows(rows);
-      alert("Imported CSV successfully.");
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to import JSON.";
-      alert(msg);
-    } finally {
-      e.currentTarget.value = "";
-    }
-  }}
-/>
-
-<button
-  onClick={() => exportToJSON(rows)}
-  className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
->
-  Export JSON
-</button>
-<button
-  onClick={() => exportToCSV(rows)}
-  className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
->
-  Export CSV
-</button>
-<button
-  onClick={() => document.getElementById("import-json")?.click()}
-  className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
->
-  Import JSON
-</button>
-<button
-  onClick={() => document.getElementById("import-csv")?.click()}
-  className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
->
-  Import CSV
-</button>
+            <button onClick={() => exportToJSON(rows)} className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50">
+              Export JSON
+            </button>
+            <button onClick={() => exportToCSV(rows)} className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50">
+              Export CSV
+            </button>
+            <button
+              onClick={() => document.getElementById("import-json")?.click()}
+              className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
+            >
+              Import JSON
+            </button>
+            <button
+              onClick={() => document.getElementById("import-csv")?.click()}
+              className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
+            >
+              Import CSV
+            </button>
           </div>
         </header>
-
+  
+        {/* Status counts */}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {(Object.keys(counts) as JobStatus[]).map(st => (
+          {(Object.keys(counts) as JobStatus[]).map((st) => (
             <div key={st} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
               <div className="text-xs text-gray-500">{STATUS_LABEL[st]}</div>
               <div className="mt-1 text-2xl font-semibold">{counts[st]}</div>
             </div>
           ))}
         </section>
-
+  
+        {/* Table (and mobile cards if you added them inside JobTable) */}
         <JobTable rows={filtered} onEdit={(r) => setEditing(r)} onDelete={deleteRow} />
-
+  
         <p className="text-[10px] text-gray-400">build modular v1</p>
       </div>
-
+  
+      {/* Modals live at root level so they can overlay */}
       <AddJobModal open={addOpen} onClose={() => setAddOpen(false)} onCreate={addRow} />
-      <EditJobModal open={!!editing} row={editing} onClose={() => setEditing(null)} onUpdate={(r) => { updateRow(r); setEditing(null); }} />
+      <EditJobModal
+        open={!!editing}
+        row={editing}
+        onClose={() => setEditing(null)}
+        onUpdate={(r) => {
+          updateRow(r);
+          setEditing(null);
+        }}
+      />
     </div>
   );
 }
