@@ -14,9 +14,8 @@ export default function JobTable({
   onDelete: (id: string) => void;
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm
-                        dark:bg-slate-800 dark:border-slate-700">
-      <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+    <section className="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm dark:bg-slate-800 dark:border-slate-700">
+  <table className="min-w-[760px] md:min-w-full divide-y divide-gray-200 dark:divide-slate-700">
         <thead className="bg-gray-100 dark:bg-slate-700">
           <tr>
             {[

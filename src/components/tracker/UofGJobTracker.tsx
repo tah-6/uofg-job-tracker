@@ -59,7 +59,8 @@ export default function UofGJobTracker() {
             <p className="text-sm text-gray-600">Client-only tracker with local persistence (modular).</p>
           </div>
   
-          <div className="flex flex-wrap gap-2">
+          <div className="relative -mx-4 sm:mx-0">
+          <div className="flex gap-2 flex-nowrap overflow-x-auto no-scrollbar px-4">
                             <input
                     id="search"
                     value={query}
@@ -133,36 +134,35 @@ export default function UofGJobTracker() {
                 }
               }}
             />
+            </div>
   
-            {/* Action buttons */}
+  <div className="flex gap-2 flex-nowrap">
+
             <button
-              onClick={() => setAddOpen(true)}
-              className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              Add Job
-            </button>
-                      <button
-            onClick={() => exportToJSON(rows)}
-            className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 
-                      dark:border-slate-700 dark:hover:bg-slate-700">
-            Export JSON
-          </button>
-            <button onClick={() => exportToCSV(rows)} className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 
-            dark:border-slate-700 dark:hover:bg-slate-700">
-              Export CSV
-            </button>
-            <button
-              onClick={() => document.getElementById("import-json")?.click()}
-              className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50
-              dark:border-slate-700 dark:hover:bg-slate-700">
-              Import JSON
-            </button>
-            <button
-              onClick={() => document.getElementById("import-csv")?.click()}
-              className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50
-              dark:border-slate-700 dark:hover:bg-slate-700">
-              Import CSV
-            </button>
+    onClick={() => setAddOpen(true)}
+    className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+  >
+    Add Job
+  </button>
+  <button onClick={() => exportToJSON(rows)} className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 dark:border-slate-700 dark:hover:bg-slate-700">
+    Export JSON
+  </button>
+  <button onClick={() => exportToCSV(rows)} className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 dark:border-slate-700 dark:hover:bg-slate-700">
+    Export CSV
+  </button>
+  <button
+    onClick={() => document.getElementById("import-json")?.click()}
+    className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 dark:border-slate-700 dark:hover:bg-slate-700"
+  >
+    Import JSON
+  </button>
+  <button
+    onClick={() => document.getElementById("import-csv")?.click()}
+    className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 dark:border-slate-700 dark:hover:bg-slate-700"
+  >
+    Import CSV
+  </button>
+          </div>
           </div>
         </header>
   
