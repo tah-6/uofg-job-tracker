@@ -183,9 +183,6 @@ export default function UofGJobTracker() {
           <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h1 className="text-2xl font-bold">Internship & Job Tracker</h1>
-              <p className="text-sm text-gray-600 dark:text-slate-400">
-                Client-only tracker with local persistence (modular).
-              </p>
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -365,7 +362,6 @@ export default function UofGJobTracker() {
             />
           )}
 
-          <p className="text-[10px] text-gray-400">build modular v3 (kanban + splash)</p>
         </div>
 
         {/* Modals */}
