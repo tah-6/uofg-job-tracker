@@ -1,17 +1,44 @@
-UofG (or anyone) Job Tracker
+# UofG (or anyone) Job Tracker
 
-Honestly, I built this because Excel was driving me crazy.
+A lightweight, mobile-friendly job application tracker with both Kanban and table views. Built to replace error-prone spreadsheets and make deadlines easy to track.
 
-I'm applying to internships right now, and tracking 50+ applications in a spreadsheet was impossible on my phone. I missed a deadline once because I couldn't check the date while I was on the bus, so I decided to build a proper mobile-friendly tracker.
+## Features
 
-How it works
-It's a Kanban board (like Trello) but stripped down to just what a student needs:
-1. The Funnel: You move jobs from "Applied" -> "Interview" -> "Offer" (hopefully).
-2. Deadlines: The cards turn red if the application deadline is within 24 hours.
-3. Import: You can upload your existing CSV so you don't have to re-type everything.
+- Kanban board with drag-and-drop status updates
+- Table view with search, filters, and bulk actions
+- CSV/JSON import/export
+- Local-first storage (no account required)
+- Dark mode toggle
+- PWA-ready installability
 
-The CSV Parser
-The most interesting part of this code is `utils/csvParser.ts`. I realized that job titles often have commas (e.g., "Engineer, Backend"), which breaks standard string splitting. I wrote a regex parser to handle quoted strings correctly so the data doesn't get corrupted during import.
+## Quick Start
 
-Tech
-React, Node.js, Express.
+```bash
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000` in your browser.
+
+## How It Works
+
+- **Statuses**: Saved → Submitted → In Progress → Interview → Offer → Rejected
+- **Deadlines**: Due-soon warnings are shown in the table view
+- **Import**: Upload CSV/JSON to bootstrap your tracker
+
+## CSV Import Details
+
+CSV parsing happens in `src/utils/io.ts`. It handles quoted fields correctly (e.g., titles with commas) to avoid corrupted data.
+
+## Deployment
+
+This is a standard Next.js app and can be deployed to Vercel or Netlify.
+
+```bash
+npm run build
+npm run start
+```
+
+## Tech Stack
+
+Next.js, React, TypeScript, Tailwind CSS, and @dnd-kit.

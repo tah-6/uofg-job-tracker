@@ -4,20 +4,41 @@ import { JobRow, JobStatus, STATUS_LABEL } from "@/types/job";
 import StatusChip from "./StatusChip";
 import { formatDate, isDueSoon } from "@/utils/dates";
 
-export default function JobTable({
+const JobTable = React.memo(function JobTable({
   rows,
   onEdit,
   onDelete,
+  selectedIds,
+  onToggleSelect,
+  onToggleAll,
 }: {
   rows: JobRow[];
   onEdit: (row: JobRow) => void;
   onDelete: (id: string) => void;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string, selected: boolean) => void;
+  onToggleAll: (selected: boolean) => void;
 }) {
+  const allSelected = rows.length > 0 && rows.every((r) => selectedIds.has(r.id));
+  const someSelected = rows.some((r) => selectedIds.has(r.id));
+
   return (
     <section className="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm dark:bg-slate-800 dark:border-slate-700">
   <table className="min-w-[760px] md:min-w-full divide-y divide-gray-200 dark:divide-slate-700">
         <thead className="bg-gray-100 dark:bg-slate-700">
           <tr>
+            <th className="px-4 py-3 text-left">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                ref={(el) => {
+                  if (el) el.indeterminate = !allSelected && someSelected;
+                }}
+                onChange={(e) => onToggleAll(e.target.checked)}
+                aria-label="Select all rows"
+                className="h-4 w-4 rounded border-gray-300 text-blue-600"
+              />
+            </th>
             {[
               "Company",
               "Position",
@@ -26,6 +47,7 @@ export default function JobTable({
               "Application Status",
               "Details",
               "Applicant Portal",
+              "Resume",
             ].map((h) => (
               <th
                 key={h}
@@ -42,6 +64,15 @@ export default function JobTable({
         <tbody className="divide-y divide-gray-100 dark:divide-slate-700 text-gray-900 dark:text-slate-100">
           {rows.map((row) => (
             <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+              <td className="px-4 py-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(row.id)}
+                  onChange={(e) => onToggleSelect(row.id, e.target.checked)}
+                  aria-label={`Select ${row.company} ${row.position}`}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                />
+              </td>
               <td className="px-4 py-3 text-sm font-medium">{row.company}</td>
               <td className="px-4 py-3 text-sm">{row.position}</td>
               <td className="px-4 py-3 text-sm">{formatDate(row.dateApplied)}</td>
@@ -73,6 +104,7 @@ export default function JobTable({
                   "—"
                 )}
               </td>
+              <td className="px-4 py-3 text-sm">{row.resumeVersion || "—"}</td>
               <td className="px-4 py-3 text-right space-x-2">
                 <button
                   onClick={() => onEdit(row)}
@@ -92,7 +124,7 @@ export default function JobTable({
 
           {rows.length === 0 && (
             <tr>
-              <td colSpan={8} className="px-4 py-10 text-center text-sm text-gray-500 dark:text-slate-400">
+              <td colSpan={10} className="px-4 py-10 text-center text-sm text-gray-500 dark:text-slate-400">
                 No rows match your filters.
               </td>
             </tr>
@@ -101,7 +133,9 @@ export default function JobTable({
       </table>
     </section>
   );
-}
+});
+
+export default JobTable;
 
 
 export function StatusPickerOptions() {

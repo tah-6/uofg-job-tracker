@@ -6,7 +6,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { JobRow } from "@/types/job";
 import { formatDate } from "@/utils/dates";
 
-export default function JobCard({
+const JobCard = React.memo(function JobCard({
   job,
   onEdit,
   onDelete,
@@ -54,6 +54,7 @@ export default function JobCard({
           rel="noreferrer"
           className="text-xs text-blue-700 hover:underline disabled:opacity-50"
           onClick={(e) => !job.portal && e.preventDefault()}
+          aria-label={job.portal ? `Open portal for ${job.company}` : "No portal link"}
         >
           {job.portal ? "Portal" : "No link"}
         </a>
@@ -61,12 +62,14 @@ export default function JobCard({
           <button
             onClick={() => onEdit(job)}
             className="rounded px-2 py-1 text-[11px] text-blue-700 hover:bg-blue-50 dark:hover:bg-slate-700"
+            aria-label={`Edit ${job.company} ${job.position}`}
           >
             Edit
           </button>
           <button
             onClick={() => onDelete(job.id)}
             className="rounded px-2 py-1 text-[11px] text-red-700 hover:bg-red-50 dark:hover:bg-slate-700"
+            aria-label={`Delete ${job.company} ${job.position}`}
           >
             Delete
           </button>
@@ -74,4 +77,6 @@ export default function JobCard({
       </div>
     </div>
   );
-}
+});
+
+export default JobCard;

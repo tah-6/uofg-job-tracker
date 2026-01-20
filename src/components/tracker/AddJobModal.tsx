@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { JobRow, JobStatus } from "@/types/job";
 import { uuid } from "@/utils/io";
+import { JobFormErrors, validateJobForm } from "@/utils/validation";
 
 type Props = {
   open: boolean;
@@ -25,13 +26,28 @@ export default function AddJobModal({ open, onClose, onCreate }: Props) {
     status: "saved" as JobStatus,
     details: "",
     portal: "",
+    resumeVersion: "",
   });
+  const [errors, setErrors] = useState<JobFormErrors>({});
 
   if (!open) return null;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.company.trim() || !form.position.trim()) return;
+    const validation = validateJobForm({
+      company: form.company,
+      position: form.position,
+      dateApplied: form.dateApplied || undefined,
+      deadline: form.deadline || undefined,
+      portal: form.portal || undefined,
+      resumeVersion: form.resumeVersion || undefined,
+      details: form.details || undefined,
+    });
+    if (Object.keys(validation).length > 0) {
+      setErrors(validation);
+      return;
+    }
+    setErrors({});
 
     onCreate({
       id: uuid(),
@@ -42,6 +58,7 @@ export default function AddJobModal({ open, onClose, onCreate }: Props) {
       status: form.status,
       details: form.details || undefined,
       portal: form.portal || undefined,
+      resumeVersion: form.resumeVersion || undefined,
     });
 
     onClose();
@@ -53,6 +70,7 @@ export default function AddJobModal({ open, onClose, onCreate }: Props) {
       status: "saved",
       details: "",
       portal: "",
+      resumeVersion: "",
     });
   };
 
@@ -73,6 +91,9 @@ export default function AddJobModal({ open, onClose, onCreate }: Props) {
             value={form.company}
             onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))}
           />
+          {errors.company && (
+            <p className="text-xs text-red-600">{errors.company}</p>
+          )}
 
           <input
             className={inputBase}
@@ -80,6 +101,9 @@ export default function AddJobModal({ open, onClose, onCreate }: Props) {
             value={form.position}
             onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))}
           />
+          {errors.position && (
+            <p className="text-xs text-red-600">{errors.position}</p>
+          )}
 
           {/* Dates row */}
           <div className="grid grid-cols-2 gap-3">
@@ -101,6 +125,11 @@ export default function AddJobModal({ open, onClose, onCreate }: Props) {
                 value={form.deadline}
                 onChange={(e) => setForm((f) => ({ ...f, deadline: e.target.value }))}
               />
+              {errors.deadline && (
+                <span className="mt-1 block text-xs text-red-600">
+                  {errors.deadline}
+                </span>
+              )}
             </label>
           </div>
 
@@ -131,8 +160,23 @@ export default function AddJobModal({ open, onClose, onCreate }: Props) {
                 value={form.portal}
                 onChange={(e) => setForm((f) => ({ ...f, portal: e.target.value }))}
               />
+              {errors.portal && (
+                <span className="mt-1 block text-xs text-red-600">
+                  {errors.portal}
+                </span>
+              )}
             </label>
           </div>
+
+          <label className="text-sm text-gray-600 dark:text-slate-300">
+            <span className="mb-1 block">Resume Version</span>
+            <input
+              className={inputBase}
+              placeholder="e.g., v3, Fall-2026"
+              value={form.resumeVersion}
+              onChange={(e) => setForm((f) => ({ ...f, resumeVersion: e.target.value }))}
+            />
+          </label>
 
           <textarea
             className="min-h-[96px] rounded border px-3 py-2 bg-white text-gray-900 border-gray-300 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700"

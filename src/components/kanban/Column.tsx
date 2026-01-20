@@ -3,11 +3,12 @@
 import React, { PropsWithChildren } from "react";
 import { useDroppable } from "@dnd-kit/core";
 
-export default function Column({
+const Column = React.memo(function Column({
   id,
   title,
   children,
-}: PropsWithChildren<{ id: string; title: string }>) {
+  emptyLabel = "No jobs",
+}: PropsWithChildren<{ id: string; title: string; emptyLabel?: string }>) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
   return (
@@ -22,7 +23,14 @@ export default function Column({
                     border-gray-200 dark:border-slate-700`}
       >
         {children}
+        {React.Children.count(children) === 0 && (
+          <div className="py-6 text-center text-xs text-gray-500 dark:text-slate-400">
+            {emptyLabel}
+          </div>
+        )}
       </div>
     </div>
   );
-}
+});
+
+export default Column;

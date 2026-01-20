@@ -1,5 +1,10 @@
 import UofGJobTracker from "@/components/tracker/UofGJobTracker";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 
 export default function Page() {
-  return <UofGJobTracker />;
+  return (
+    <ErrorBoundary>
+      <UofGJobTracker />
+    </ErrorBoundary>
+  );
 }
